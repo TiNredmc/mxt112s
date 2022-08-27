@@ -43,7 +43,7 @@ uint8_t amplitude;
 void mxt_read(uint16_t addr, uint8_t *data, uint16_t len) {
 
   Wire.beginTransmission(MXT_ADDR);// Begin TX
-  Wire.write((uint8_t)(addr << 8));// Write LSB byte address to MXT112S.
+  Wire.write((uint8_t)(addr >> 8));// Write LSB byte address to MXT112S.
   Wire.write((uint8_t)addr);// Write MSB byte address to MXT112S.
 
   Wire.endTransmission();
@@ -59,7 +59,7 @@ void mxt_read(uint16_t addr, uint8_t *data, uint16_t len) {
 void mxt_write(uint16_t addr, uint8_t *data, uint8_t len) {
 
   Wire.beginTransmission(MXT_ADDR);// Begin tx
-  Wire.write((uint8_t)(addr << 8));// Write LSB byte address to MXT112S.
+  Wire.write((uint8_t)(addr >> 8));// Write LSB byte address to MXT112S.
   Wire.write((uint8_t)addr);// Write MSB byte address to MXT112S.
 
   while (len--)
