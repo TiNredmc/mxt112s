@@ -7,20 +7,37 @@
 /* I2C 7bit address of MXT112S */
 #define MXT_ADDR  0x4B
 
+// Interrupt input.
+#define MXT_INT 4
+
 #define MXT_ID_BLK_SIZ  7// Query ID size of 7 bytes
 
 // Number of elements in the Object Table
 uint8_t num_obj = 0;
 
-// Store address of each object
+// Store address of each object.
 uint16_t T5_addr = 0;
 uint16_t T9_addr = 0;
-uint16_t T100_addr = 0;
+//uint16_t T100_addr = 0;
 
-// Store message size of each object
+// Store message size of each object.
 uint8_t T5_msg_size = 0;
 uint8_t T9_msg_size = 0;
-uint8_t T100_msg_size = 0;
+//uint8_t T100_msg_size = 0;
+
+// Store number of report instances of each report.
+uint8_t T9_instances = 0;
+//uint8_t T100_instances = 0;
+
+// Store number of report ID per instance.
+uint16_t T9_report_cnt = 0;
+//uint16_t T100_report_cnt = 0;
+
+// Genral purpose buffer array
+uint8_t MXT_BUF[256];
+
+uint16_t xpos, ypos;
+uint8_t amplitude;
 
 // Read data from MXT112S
 void mxt_read(uint16_t addr, uint8_t *data, uint16_t len) {
@@ -96,17 +113,50 @@ void mxt_identify() {
         Serial.println("Found T9 object");
         T9_addr = (buf[2] << 8) | buf[1];
         T9_msg_size = buf[3] + 1;
+        T9_instances = buf[4] + 1;
+        T9_report_cnt = (buf[4] + 1) * buf[5];
         break;
 
-      case 100:// T100 Multi touch
-        Serial.println("Found T100 object");
-        T100_addr = (buf[2] << 8) | buf[1];
-        T100_msg_size = buf[3] + 1;
-        break;
+//      case 100:// T100 Multi touch
+//        Serial.println("Found T100 object");
+//        T100_addr = (buf[2] << 8) | buf[1];
+//        T100_msg_size = buf[3] + 1;
+//        T100_instances = buf[4] + 1;
+//        T100_report_cnt = (buf[4] + 1) * buf[5];
+//        break;
     }
     
   }
 
+}
+
+// Report Multi touch from T9 object.
+// But data is read from T5 message object.
+// Since T9 can report Upto 10 fingers. 
+// The report ID can be more than 1 Report ID.
+// Starting from 0x09 (T9 base report ID).
+void mxt_report_t9(){
+  if(digitalRead(MXT_INT) == 0){
+    mxt_read(T5_addr, MXT_BUF, T9_msg_size);
+  
+    if(MXT_BUF[0] != 9){// If we didn't get T9 report (check for the T9 report ID).
+      // Just ignore the interrupt.
+      return;      
+    }
+
+    // Check status from first byte.
+    if(MXT_BUF[1] & 0x02)// If touch has been suppressed by Grip or Face (imagine put your phone to your ear).
+     // Just ignore
+      return;
+
+    // Convert 2 bytes to 16bit uint X and Y position 
+    xpos = (MXT_BUF[0x02] << 4) | ((MXT_BUF[0x04] >> 4) & 0x0F);
+    ypos = (MXT_BUF[0x03] << 4) | (MXT_BUF[0x04] & 0x0F);
+
+    // Check for touch amplitude (Pressure?)
+    if(MXT_BUF[1] & 0x04)
+      amplitude =  MXT_BUF[0x06];
+  }
 }
 
 void setup() {
@@ -114,6 +164,8 @@ void setup() {
   Serial.begin(115200);// Init UART.
   Wire.setClock(100000);// 100kHz I2C clock
   Wire.begin();// Init I2C
+
+  pinMode(MXT_INT, INPUT_PULLUP);
 
   delay(100);
   mxt_identify();
