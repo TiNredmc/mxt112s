@@ -1,0 +1,14 @@
+PCB name CTP_3.01-2
+
+// Touchy stuffs.
+TP1 -> 3v3 (VDD)
+TP2 -> GND
+TP3 -> SDA
+TP4 -> SCL
+TP5 -> /CHG (Interrupt)
+TP6 -> 3v3 (AVDD)
+TP7 -> /RST (Pull low to reset)
+
+// For debugging. I don't quite care about this part
+TP8 -> DBG_DATA 
+TP9 -> DBG_CLK
